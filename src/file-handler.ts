@@ -88,42 +88,82 @@ const writeToFile = async (stream: FileSystemWritableFileStream, data: ArrayBuff
     await stream.close();
 };
 
-const loadCameraPoses = async (url: string, filename: string, events: Events) => {
+const loadJson = async (url: string, filename: string, events: Events) => {
     const response = await fetch(url);
     const json = await response.json();
-    if (json.length > 0) {
-        // calculate the average position of the camera poses
-        const ave = new Vec3(0, 0, 0);
-        json.forEach((pose: any) => {
-            vec.set(pose.position[0], pose.position[1], pose.position[2]);
-            ave.add(vec);
+
+    if(json.length > 0 && json[0].hasOwnProperty('position') && json[0].hasOwnProperty('rotation'))
+        await loadColmapPoses(json, filename, events);
+    else if(json.hasOwnProperty('frames') && json.frames.length > 0)
+        await loadNerfstudioDataPoses(json, filename, events);
+}
+
+const loadColmapPoses = async (json: any, filename: string, events: Events) => {
+    // calculate the average position of the camera poses
+    const ave = new Vec3(0, 0, 0);
+    json.forEach((pose: any) => {
+        vec.set(pose.position[0], pose.position[1], pose.position[2]);
+        ave.add(vec);
+    });
+    ave.mulScalar(1 / json.length);
+
+    json.forEach((pose: any, i: number) => {
+        const p = new Vec3(pose.position);
+        const z = new Vec3(pose.rotation[0][2], pose.rotation[1][2], pose.rotation[2][2]);
+
+        const dot = vec.sub2(ave, p).dot(z);
+        vec.copy(z).mulScalar(dot).add(p);
+
+        events.fire('camera.addPose', {
+            name: pose.img_name ?? `${filename}_${i}`,
+            position: new Vec3(-p.x, -p.y, p.z),
+            target: new Vec3(-vec.x, -vec.y, vec.z)
         });
-        ave.mulScalar(1 / json.length);
-
-        json.forEach((pose: any, i: number) => {
-            if (pose.hasOwnProperty('position') && pose.hasOwnProperty('rotation')) {
-                const p = new Vec3(pose.position);
-                const z = new Vec3(pose.rotation[0][2], pose.rotation[1][2], pose.rotation[2][2]);
-
-                const dot = vec.sub2(ave, p).dot(z);
-                vec.copy(z).mulScalar(dot).add(p);
-
-                events.fire('camera.addPose', {
-                    name: pose.img_name ?? `${filename}_${i}`,
-                    position: new Vec3(-p.x, -p.y, p.z),
-                    target: new Vec3(-vec.x, -vec.y, vec.z)
-                });
-            }
-        });
-    }
+    });
 };
+
+
+const loadNerfstudioDataPoses = async (json: any, filename: string, events: Events) => {
+    // calculate the average position of the camera poses
+    const ave = new Vec3(0, 0, 0);
+    json.frames.forEach((pose: any) => {
+        vec.set(pose.transform_matrix[0][3], pose.transform_matrix[1][3], pose.transform_matrix[2][3]);
+        ave.add(vec);
+    });
+    ave.mulScalar(1 / json.length);
+
+    json.frames.forEach((pose: any, i: number) => {
+        // Troubleshoot (maybe the matrix needs flipped columns <> rows)
+        const w2c = (new Mat4()).set([
+            ...pose.transform_matrix[0], 
+            ...pose.transform_matrix[1], 
+            ...pose.transform_matrix[2], 
+            ...pose.transform_matrix[3]]).invert();
+
+        // THIS CODE NEEDS TO GET FIXED
+        //
+        // Here is code to transform from colmap to nerfstudio-data
+        // https://github.com/nerfstudio-project/nerfstudio/blob/8e27e5f54d01706c23e520daf4d96b4e781dd02c/nerfstudio/process_data/colmap_utils.py#L432
+        const p = w2c.getTranslation();        
+         const z = w2c.transformVector(new Vec3(1, 1, 1)).sub(p);
+
+        const dot = vec.sub2(ave, p).dot(z);
+        vec.copy(z).mulScalar(dot).add(p);
+
+        events.fire('camera.addPose', {
+            name: pose.file_path ?? `${filename}_${i}`,
+            position: new Vec3(-p.x, -p.y, p.z),
+            target: new Vec3(-vec.x, -vec.y, vec.z)
+        });
+    });
+}
 
 // initialize file handler events
 const initFileHandler = async (scene: Scene, events: Events, dropTarget: HTMLElement, remoteStorageDetails: RemoteStorageDetails) => {
 
     const handleLoad = (url: string, filename: string) => {
         if (filename.toLowerCase().endsWith('.json')) {
-            return loadCameraPoses(url, filename, events);
+            return loadJson(url, filename, events);
         } else if (filename.toLowerCase().endsWith('.ply')) {
             return scene.loadModel(url, filename);
         } else {
