@@ -124,31 +124,20 @@ const loadColmapPoses = async (json: any, filename: string, events: Events) => {
 
 
 const loadNerfstudioDataPoses = async (json: any, filename: string, events: Events) => {
-    // calculate the average position of the camera poses
-    const ave = new Vec3(0, 0, 0);
-    json.frames.forEach((pose: any) => {
-        vec.set(pose.transform_matrix[0][3], pose.transform_matrix[1][3], pose.transform_matrix[2][3]);
-        ave.add(vec);
-    });
-    ave.mulScalar(1 / json.length);
-
     json.frames.forEach((pose: any, i: number) => {
         // Troubleshoot (maybe the matrix needs flipped columns <> rows)
         const w2c = (new Mat4()).set([
             ...pose.transform_matrix[0], 
             ...pose.transform_matrix[1], 
             ...pose.transform_matrix[2], 
-            ...pose.transform_matrix[3]]).invert();
+            ...pose.transform_matrix[3]]).transpose();
 
         // THIS CODE NEEDS TO GET FIXED
         //
         // Here is code to transform from colmap to nerfstudio-data
         // https://github.com/nerfstudio-project/nerfstudio/blob/8e27e5f54d01706c23e520daf4d96b4e781dd02c/nerfstudio/process_data/colmap_utils.py#L432
-        const p = w2c.getTranslation();        
-         const z = w2c.transformVector(new Vec3(1, 1, 1)).sub(p);
-
-        const dot = vec.sub2(ave, p).dot(z);
-        vec.copy(z).mulScalar(dot).add(p);
+        const p = w2c.getTranslation();
+        w2c.transformPoint(Vec3.FORWARD, vec);
 
         events.fire('camera.addPose', {
             name: pose.file_path ?? `${filename}_${i}`,
