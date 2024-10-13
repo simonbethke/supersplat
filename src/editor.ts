@@ -10,6 +10,7 @@ import { Splat } from './splat';
 import { State } from './splat-state';
 import { SelectAllOp, SelectNoneOp, SelectInvertOp, SelectOp, HideSelectionOp, UnhideAllOp, DeleteSelectionOp, ResetOp } from './edit-ops';
 import { Events } from './events';
+import { ElementType } from './element';
 
 // register for editor and scene events
 const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: Scene) => {
@@ -446,6 +447,23 @@ const registerEditorEvents = (events: Events, editHistory: EditHistory, scene: S
                 events.fire('edit.add', new SelectOp(splat, op, filter));
             }
         });
+    });
+
+    events.on('color.update', (band: 'red'|'green'|'blue', factor: number) => {
+        console.log('event received ' + band + ' f ' + factor)
+        const bandMap = {
+            'red': 'f_dc_0',
+            'green': 'f_dc_1',
+            'blue': 'f_dc_2'
+        };
+        scene.getElementsByType(ElementType.splat).forEach((e: Splat) => {
+            console.log(e);
+            const prop = bandMap[band];
+            const data = e.splatData.getProp(prop);
+            for(let i = 0; i < e.numSplats; i++)
+                data[i] = data[i] * factor;
+        });
+        scene.forceRender = true;
     });
 
     events.on('select.hide', () => {
