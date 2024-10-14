@@ -24,6 +24,7 @@ uniform sampler2D splatColor;
 uniform sampler2D splatState;
 
 uniform mat4 selection_transform;
+uniform vec4 color_transform;
 
 varying mediump vec2 texCoord;
 varying mediump vec4 color;
@@ -71,7 +72,7 @@ void main(void)
     vec4 v1v2 = calcV1V2(splat_cam.xyz, covA, covB, transpose(mat3(model_view)));
 
     // get color
-    color = texelFetch(splatColor, splatUV, 0);
+    color = texelFetch(splatColor, splatUV, 0) * color_transform;
 
     // calculate scale based on alpha
     // float scale = min(1.0, sqrt(-log(1.0 / 255.0 / color.a)) / 2.0);
@@ -208,6 +209,11 @@ class Splat extends Element {
     worldBoundDirty = true;
     visible_ = true;
     selectionTransform = new Mat4();
+    colorAdjustments = {
+        temp: 0,
+        tint: 0
+    };
+
 
     rebuildMaterial: (bands: number) => void;
 
@@ -266,8 +272,15 @@ class Splat extends Element {
             instance.createMaterial(getMaterialOptions(instance.splat.hasSH ? bands : 0));
 
             const material = instance.material;
+            const {temp, tint} = this.colorAdjustments;
+
             material.setParameter('splatState', this.stateTexture);
             material.setParameter('selection_transform', this.selectionTransform.data);
+            material.setParameter('color_transform', [
+                1.0 + temp + tint,
+                1.0 - Math.abs(temp / 2) - tint,
+                1.0 - temp + tint / 2
+            ]);
             material.update();
         };
 
@@ -531,6 +544,29 @@ class Splat extends Element {
             this.visible_ = value;
             this.scene.events.fire('splat.visibility', this);
         }
+    }
+
+    applyColorAdjustment(adj: ({temp: number, tint: number})){
+        this.colorAdjustments = adj;        
+        this.rebuildMaterial(this.scene.events.invoke('view.bands'));
+    }
+
+    set colorTemperature(value: number) {
+        this.colorAdjustments.temp = value;
+        this.rebuildMaterial(this.scene.events.invoke('view.bands'));
+    }
+
+    get colorTemperature() { 
+        return this.colorAdjustments.temp;
+    }
+
+    set colorTint(value: number) {
+        this.colorAdjustments.tint = value;
+        this.rebuildMaterial(this.scene.events.invoke('view.bands'));
+    }
+
+    get colorTint() { 
+        return this.colorAdjustments.tint;
     }
 }
 

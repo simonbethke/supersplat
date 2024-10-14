@@ -224,6 +224,39 @@ class EntityTransformOp {
     }
 }
 
+interface EntityColor {
+    temp: number
+    tint: number
+}
+
+class EntityColorOp {
+    name = 'entityColorAdjustment';
+
+    splat: Splat;
+    oldAdj: EntityColor;
+    newAdj: EntityColor;
+
+    constructor(options: { splat: Splat, oldAdj: EntityColor, newAdj: EntityColor }) {
+        this.splat = options.splat;
+        this.oldAdj = options.oldAdj;
+        this.newAdj = options.newAdj;
+    }
+
+    do() {
+        this.splat.applyColorAdjustment(this.newAdj);
+    }
+
+    undo() {
+        this.splat.applyColorAdjustment(this.oldAdj);
+    }
+
+    destroy() {
+        this.splat = null;
+        this.oldAdj = null;
+        this.oldAdj = null;
+    }
+}
+
 class SetPivotOp {
     name = "setPivot";
     splat: Splat;
@@ -256,5 +289,6 @@ export {
     DeleteSelectionOp,
     ResetOp,
     EntityTransformOp,
+    EntityColorOp,
     SetPivotOp
 };
