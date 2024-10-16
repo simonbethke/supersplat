@@ -94,8 +94,7 @@ class BottomToolbar extends Container {
         redo.dom.appendChild(createSvg(redoSvg));
         picker.dom.appendChild(createSvg(pickerSvg));
         brush.dom.appendChild(createSvg(brushSvg));
-        sphere.dom.appendChild(createSvg(sphereSvg));
-        
+        sphere.dom.appendChild(createSvg(sphereSvg));        
         // lasso.dom.appendChild(createSvg(lassoSvg));
         // crop.dom.appendChild(createSvg(cropSvg));
 
@@ -107,7 +106,6 @@ class BottomToolbar extends Container {
         // this.append(lasso);
         this.append(new Element({ class: 'bottom-toolbar-separator' }));
         this.append(sphere);
-        this.append(new Element({ class: 'bottom-toolbar-separator' }));
         // this.append(crop);
         this.append(new Element({ class: 'bottom-toolbar-separator' }));
         this.append(translate);
@@ -148,7 +146,7 @@ class BottomToolbar extends Container {
         tooltips.register(brush, localize('tooltip.brush'));
         // tooltips.register(lasso, 'Lasso Select');
         tooltips.register(sphere, localize('tooltip.sphere'));
-        // tooltips.register(crop, 'Crop');        
+        // tooltips.register(crop, 'Crop');
         tooltips.register(translate, localize('tooltip.translate'));
         tooltips.register(rotate, localize('tooltip.rotate'));
         tooltips.register(scale, localize('tooltip.scale'));

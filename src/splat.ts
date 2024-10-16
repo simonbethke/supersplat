@@ -550,6 +550,7 @@ class Splat extends Element {
     set colorAdjustments(adj: ({temp: number, tint: number})){
         this._colorAdjustments = adj;        
         this.rebuildMaterial(this.scene.events.invoke('view.bands'));
+        this.scene.events.fire('splat.color', this);
     }
 
     get colorAdjustments() { 

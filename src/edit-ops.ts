@@ -1,4 +1,4 @@
-import { Quat, Vec3 } from 'playcanvas';
+import { events, Quat, scene, Vec3 } from 'playcanvas';
 import { Splat } from './splat';
 import { State } from './splat-state';
 
