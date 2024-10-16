@@ -16,6 +16,7 @@ import {
 import { Element, ElementType } from "./element";
 import { Serializer } from "./serializer";
 import { State } from './splat-state';
+import { EntityColor } from './edit-ops';
 
 const vertexShader = /*glsl*/`
 uniform vec3 view_position;
@@ -209,7 +210,8 @@ class Splat extends Element {
     worldBoundDirty = true;
     visible_ = true;
     selectionTransform = new Mat4();
-    _colorAdjustments = {
+    _colorAdjustments: EntityColor = {
+        bright: 1,
         temp: 0,
         tint: 0
     };
@@ -272,14 +274,14 @@ class Splat extends Element {
             instance.createMaterial(getMaterialOptions(instance.splat.hasSH ? bands : 0));
 
             const material = instance.material;
-            const {temp, tint} = this._colorAdjustments;
+            const {bright, temp, tint} = this._colorAdjustments;
 
             material.setParameter('splatState', this.stateTexture);
             material.setParameter('selection_transform', this.selectionTransform.data);
             material.setParameter('color_transform', [
-                1.0 + temp + tint,
-                1.0 - Math.abs(temp / 2) - tint,
-                1.0 - temp + tint / 2,
+                (1.0 + temp + tint) * bright,
+                (1.0 - Math.abs(temp / 2) - tint) * bright,
+                (1.0 - temp + tint / 2) * bright,
                 1
             ]);
             material.update();
@@ -547,7 +549,7 @@ class Splat extends Element {
         }
     }
 
-    set colorAdjustments(adj: ({temp: number, tint: number})){
+    set colorAdjustments(adj: EntityColor){
         this._colorAdjustments = adj;        
         this.rebuildMaterial(this.scene.events.invoke('view.bands'));
         this.scene.events.fire('splat.color', this);

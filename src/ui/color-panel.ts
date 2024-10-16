@@ -13,6 +13,27 @@ class ColorPanel extends Container {
 
         super(args);
 
+        const brightness = new Container({
+            class: 'color-row'
+        });
+
+        const brightnessLabel = new Label({
+            class: 'color-label',
+            text: localize('color.brightness')
+        });
+
+        const brightnessInput = new NumericInput({
+            class: 'color-expand',
+            precision: 2,
+            value: 1.0,
+            min: 0.0,
+            max: 10.0,
+            enabled: false
+        });
+
+        brightness.append(brightnessLabel);
+        brightness.append(brightnessInput);
+
         const temperature = new Container({
             class: 'color-row'
         });
@@ -32,9 +53,7 @@ class ColorPanel extends Container {
         });
 
         temperature.append(temperatureLabel);
-        temperature.append(temperatureInput);
-
-        
+        temperature.append(temperatureInput);        
         
         const tint = new Container({
             class: 'color-row'
@@ -57,8 +76,7 @@ class ColorPanel extends Container {
         tint.append(tintLabel);
         tint.append(tintInput);
 
-
-
+        this.append(brightness);
         this.append(temperature);
         this.append(tint);
 
@@ -79,10 +97,10 @@ class ColorPanel extends Container {
             if (selection) {
                 // enable inputs
                 updateUI();
-                temperatureInput.enabled = tintInput.enabled = true;
+                temperatureInput.enabled = tintInput.enabled = brightnessInput.enabled = true;
             } else {
                 // disable inputs
-                temperatureInput.enabled = tintInput.enabled = false;
+                temperatureInput.enabled = tintInput.enabled = brightnessInput.enabled = false;
             }
         });
 
@@ -98,6 +116,7 @@ class ColorPanel extends Container {
 
         const updateOp = () => {
             op.newAdj = {
+                bright: brightnessInput.value,
                 temp: temperatureInput.value,
                 tint: tintInput.value
             };
@@ -131,7 +150,7 @@ class ColorPanel extends Container {
             submitOp();
         };
 
-        [temperatureInput, tintInput].forEach((input) => {
+        [brightnessInput, temperatureInput, tintInput].forEach((input) => {
             input.on('change', change);
             input.on('slider:mousedown', mousedown);
             input.on('slider:mouseup', mouseup);

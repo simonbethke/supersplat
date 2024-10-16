@@ -225,6 +225,7 @@ class EntityTransformOp {
 }
 
 interface EntityColor {
+    bright: number
     temp: number
     tint: number
 }
@@ -290,5 +291,6 @@ export {
     ResetOp,
     EntityTransformOp,
     EntityColorOp,
+    EntityColor,
     SetPivotOp
 };
