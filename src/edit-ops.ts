@@ -243,11 +243,11 @@ class EntityColorOp {
     }
 
     do() {
-        this.splat.applyColorAdjustment(this.newAdj);
+        this.splat.colorAdjustments = this.newAdj;
     }
 
     undo() {
-        this.splat.applyColorAdjustment(this.oldAdj);
+        this.splat.colorAdjustments = this.oldAdj;
     }
 
     destroy() {

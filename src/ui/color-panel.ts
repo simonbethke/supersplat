@@ -1,8 +1,7 @@
-import { Container, ContainerArgs, Label, NumericInput, Panel, PanelArgs, VectorInput } from 'pcui';
-import { Quat, Vec3 } from 'playcanvas';
+import { Container, ContainerArgs, Label, NumericInput } from 'pcui';
 import { Events } from '../events';
 import { Splat } from '../splat';
-import { EntityColorOp, EntityTransformOp } from '../edit-ops';
+import { EntityColorOp } from '../edit-ops';
 import { localize } from './localization';
 
 class ColorPanel extends Container {
@@ -50,8 +49,8 @@ class ColorPanel extends Container {
             class: 'color-expand',
             precision: 2,
             value: 0,
-            min: -0.5,
             max: 0.5,
+            min: -0.5,
             enabled: false
         });
 
@@ -65,20 +64,12 @@ class ColorPanel extends Container {
 
         let selection: Splat | null = null;
 
-        const toArray = (v: Vec3) => {
-            return [v.x, v.y, v.z];
-        };
-
-        const toVec3 = (a: number[]) => {
-            return new Vec3(a[0], a[1], a[2]);
-        };
-
         let uiUpdating = false;
 
         const updateUI = () => {
             uiUpdating = true;
-            temperatureInput.value = selection.colorTemperature;
-            tintInput.value = selection.colorTint;
+            temperatureInput.value = selection.colorAdjustments.temp;
+            tintInput.value = selection.colorAdjustments.tint;
             uiUpdating = false;
         };
 
@@ -96,28 +87,20 @@ class ColorPanel extends Container {
         });
 
         let op: EntityColorOp | null = null;
-
+ 
         const createOp = () => {
-            const p = selection.pivot.getLocalPosition();
-            const r = selection.pivot.getLocalRotation();
-            const s = selection.pivot.getLocalScale();
-
             op = new EntityColorOp({
                 splat: selection,
-                oldAdj: {
-                    temp: selection.colorTemperature,
-                    tint: selection.colorTemperature
-                },
-                newAdj: {
-                    temp: selection.colorTemperature,
-                    tint: selection.colorTemperature
-                }
+                oldAdj: selection.colorAdjustments,
+                newAdj: selection.colorAdjustments
             });
         };
 
         const updateOp = () => {
-            op.newAdj.temp = temperatureInput.value;
-            op.newAdj.tint = tintInput.value;
+            op.newAdj = {
+                temp: temperatureInput.value,
+                tint: tintInput.value
+            };
 
             op.do();
         };

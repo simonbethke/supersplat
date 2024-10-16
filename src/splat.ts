@@ -209,7 +209,7 @@ class Splat extends Element {
     worldBoundDirty = true;
     visible_ = true;
     selectionTransform = new Mat4();
-    colorAdjustments = {
+    _colorAdjustments = {
         temp: 0,
         tint: 0
     };
@@ -272,14 +272,15 @@ class Splat extends Element {
             instance.createMaterial(getMaterialOptions(instance.splat.hasSH ? bands : 0));
 
             const material = instance.material;
-            const {temp, tint} = this.colorAdjustments;
+            const {temp, tint} = this._colorAdjustments;
 
             material.setParameter('splatState', this.stateTexture);
             material.setParameter('selection_transform', this.selectionTransform.data);
             material.setParameter('color_transform', [
                 1.0 + temp + tint,
                 1.0 - Math.abs(temp / 2) - tint,
-                1.0 - temp + tint / 2
+                1.0 - temp + tint / 2,
+                1
             ]);
             material.update();
         };
@@ -546,27 +547,13 @@ class Splat extends Element {
         }
     }
 
-    applyColorAdjustment(adj: ({temp: number, tint: number})){
-        this.colorAdjustments = adj;        
+    set colorAdjustments(adj: ({temp: number, tint: number})){
+        this._colorAdjustments = adj;        
         this.rebuildMaterial(this.scene.events.invoke('view.bands'));
     }
 
-    set colorTemperature(value: number) {
-        this.colorAdjustments.temp = value;
-        this.rebuildMaterial(this.scene.events.invoke('view.bands'));
-    }
-
-    get colorTemperature() { 
-        return this.colorAdjustments.temp;
-    }
-
-    set colorTint(value: number) {
-        this.colorAdjustments.tint = value;
-        this.rebuildMaterial(this.scene.events.invoke('view.bands'));
-    }
-
-    get colorTint() { 
-        return this.colorAdjustments.tint;
+    get colorAdjustments() { 
+        return this._colorAdjustments;
     }
 }
 
