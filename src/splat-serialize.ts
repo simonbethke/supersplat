@@ -13,10 +13,6 @@ import { State } from './splat-state';
 import { version } from '../package.json';
 import { BufferWriter, Writer } from './serialize/writer';
 import { ZipWriter } from './serialize/zip-writer';
-import indexCss from '../submodules/supersplat-viewer/dist/index.css';
-import indexHtml from '../submodules/supersplat-viewer/dist/index.html';
-// eslint-disable-next-line import/default
-import indexJs from '../submodules/supersplat-viewer/dist/index.js';
 
 type SerializeSettings = {
     maxSHBands?: number;            // specifies the maximum number of bands to be exported
@@ -1004,33 +1000,6 @@ const serializeViewer = async (splats: Splat[], options: ViewerExportSettings, w
     await serializePlyCompressed(splats, options.serializeSettings, plyWriter);
     const plyBuffer = plyWriter.close();
 
-    if (options.type === 'html') {
-        const pad = (text: string, spaces: number) => {
-            const whitespace = ' '.repeat(spaces);
-            return text.split('\n').map(line => whitespace + line).join('\n');
-        };
-
-        const style = '<link rel="stylesheet" href="./index.css">';
-        const script = '<script type="module" src="./index.js"></script>';
-        const settings = 'settings: fetch(settingsUrl).then(response => response.json())';
-        const content = 'contentUrl,';
-
-        const html = indexHtml
-        .replace(style, `<style>\n${pad(indexCss, 12)}\n        </style>`)
-        .replace(script, `<script type="module">\n${pad(indexJs, 12)}\n        </script>`)
-        .replace(settings, `settings: ${JSON.stringify(experienceSettings)}`)
-        .replace(content, `contentUrl: "data:application/ply;base64,${encodeBase64(plyBuffer)}",`);
-
-        await writer.write(new TextEncoder().encode(html), true);
-    } else {
-        const zipWriter = new ZipWriter(writer);
-        await zipWriter.file('index.html', indexHtml);
-        await zipWriter.file('index.css', indexCss);
-        await zipWriter.file('index.js', indexJs);
-        await zipWriter.file('settings.json', JSON.stringify(experienceSettings, null, 4));
-        await zipWriter.file('scene.compressed.ply', plyBuffer);
-        await zipWriter.close();
-    }
 };
 
 export {

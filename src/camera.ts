@@ -190,7 +190,7 @@ class Camera extends Element {
         this.focalPointTween.goto(point, dampingFactorFactor * this.scene.config.controls.dampingFactor);
     }
 
-    setAzimElev(azim: number, elev: number, dampingFactorFactor: number = 1) {
+    setAzimElev(azim: number, elev: number, dampingFactorFactor: number = 0) {
         // clamp
         azim = mod(azim, 360);
         elev = Math.max(this.minElev, Math.min(this.maxElev, elev));
@@ -219,7 +219,7 @@ class Camera extends Element {
         t.goto({ distance }, dampingFactorFactor * controls.dampingFactor);
     }
 
-    setPose(position: Vec3, target: Vec3, dampingFactorFactor: number = 1) {
+    setPose(position: Vec3, target: Vec3, dampingFactorFactor: number = 0) {
         vec.sub2(target, position);
         const l = vec.length();
         const azim = Math.atan2(-vec.x / l, -vec.z / l) * math.RAD_TO_DEG;

@@ -26,7 +26,7 @@ const sceneConfig = {
         shBands: 3
     },
     controls: {
-        dampingFactor: 0.2,
+        dampingFactor: 0,
         minPolarAngle: 0,
         maxPolarAngle: Math.PI,
         minZoom: 1e-6,

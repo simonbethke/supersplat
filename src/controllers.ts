@@ -48,14 +48,12 @@ class PointerController {
         let touches: { id: number, x: number, y: number}[] = [];
         let midx: number, midy: number, midlen: number;
 
-        const pointerdown = (event: PointerEvent) => {
+        const pointerdown = async (event: PointerEvent) => {
             if (event.pointerType === 'mouse') {
                 if (buttons.every(b => !b)) {
-                    target.setPointerCapture(event.pointerId);
+                    await target.requestPointerLock({ unadjustedMovement: true });
                 }
                 buttons[event.button] = true;
-                x = event.offsetX;
-                y = event.offsetY;
             } else if (event.pointerType === 'touch') {
                 if (touches.length === 0) {
                     target.setPointerCapture(event.pointerId);
@@ -78,7 +76,7 @@ class PointerController {
             if (event.pointerType === 'mouse') {
                 buttons[event.button] = false;
                 if (buttons.every(b => !b)) {
-                    target.releasePointerCapture(event.pointerId);
+                    document.exitPointerLock();
                 }
             } else {
                 touches = touches.filter(touch => touch.id !== event.pointerId);
@@ -90,10 +88,8 @@ class PointerController {
 
         const pointermove = (event: PointerEvent) => {
             if (event.pointerType === 'mouse') {
-                const dx = event.offsetX - x;
-                const dy = event.offsetY - y;
-                x = event.offsetX;
-                y = event.offsetY;
+                const dx = event.movementX;
+                const dy = event.movementY;
 
                 // right button can be used to orbit with ctrl key and to zoom with alt | meta key
                 const mod = buttons[2] ?
