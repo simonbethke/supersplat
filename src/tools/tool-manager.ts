@@ -84,4 +84,4 @@ class ToolManager {
     }
 }
 
-export { ToolManager };
+export { ToolManager, Tool };

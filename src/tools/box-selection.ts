@@ -1,24 +1,66 @@
 import { Button, Container, NumericInput } from '@playcanvas/pcui';
-import { TranslateGizmo, Vec3 } from 'playcanvas';
+import { EventHandler, TranslateGizmo, Vec3 } from 'playcanvas';
 
 import { BoxShape } from '../box-shape';
 import { Events } from '../events';
 import { Scene } from '../scene';
 import { Splat } from '../splat';
+import { Tool } from './tool-manager';
 
-class BoxSelection {
-    activate: () => void;
-    deactivate: () => void;
+const EVENT_GROUP = 'BoxSelection';
 
-    active = false;
+class BoxSelection implements Tool {
+    private events: Events;
+    private scene: Scene;
+    private canvasContainer: Container;
+    private parts!: {
+        gizmo: TranslateGizmo,
+        box: BoxShape,
+        selectToolbar: Container
+    };
 
     constructor(events: Events, scene: Scene, canvasContainer: Container) {
+        this.events = events;
+        this.scene = scene;
+        this.canvasContainer = canvasContainer;
+        this.initParts();
+
+        this.events.onGroup(EVENT_GROUP, 'camera.focalPointPicked', (details: { splat: Splat, position: Vec3 }) => {
+            this.parts.box.pivot.setPosition(details.position);
+            this.parts.gizmo.attach([this.parts.box.pivot]);
+        });
+
+        this.events.onGroup(EVENT_GROUP, ['camera.resize', 'camera.ortho'], () => this.updateGizmoSize());
+    }
+
+    activate() {
+        this.scene.add(this.parts.box);
+        this.parts.gizmo.attach([this.parts.box.pivot]);
+        this.parts.selectToolbar.hidden = false;
+        this.events.activateGroup(EVENT_GROUP);
+        this.updateGizmoSize();
+    }
+
+    deactivate() {
+        this.events.deactivateGroup(EVENT_GROUP);
+        this.parts.selectToolbar.hidden = true;
+        this.parts.gizmo.detach();
+        this.scene.remove(this.parts.box);
+    }
+
+
+    apply(box: BoxShape, op: 'set' | 'add' | 'remove') {
+        const p = box.pivot.getPosition();
+        this.events.fire('select.byBox', op, [p.x, p.y, p.z, box.lenX, box.lenY, box.lenZ]);
+    }
+
+    initParts() {
         const box = new BoxShape();
 
-        const gizmo = new TranslateGizmo(scene.camera.entity.camera, scene.gizmoLayer);
+        const gizmo = new TranslateGizmo(this.scene.camera.entity.camera, this.scene.gizmoLayer);
 
         gizmo.on('render:update', () => {
-            scene.forceRender = true;
+            this.scene.forceRender = true;
         });
 
         gizmo.on('transform:move', () => {
@@ -70,24 +112,19 @@ class BoxSelection {
         selectToolbar.append(lenY);
         selectToolbar.append(lenZ);
 
-        canvasContainer.append(selectToolbar);
-
-        const apply = (op: 'set' | 'add' | 'remove') => {
-            const p = box.pivot.getPosition();
-            events.fire('select.byBox', op, [p.x, p.y, p.z, box.lenX, box.lenY, box.lenZ]);
-        };
+        this.canvasContainer.append(selectToolbar);
 
         setButton.dom.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
-            apply('set');
+            this.apply(box, 'set');
         });
         addButton.dom.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
-            apply('add');
+            this.apply(box, 'add');
         });
         removeButton.dom.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
-            apply('remove');
+            this.apply(box, 'remove');
         });
         lenX.on('change', () => {
             box.lenX = lenX.value;
@@ -99,38 +136,20 @@ class BoxSelection {
             box.lenZ = lenZ.value;
         });
 
-        events.on('camera.focalPointPicked', (details: { splat: Splat, position: Vec3 }) => {
-            if (this.active) {
-                box.pivot.setPosition(details.position);
-                gizmo.attach([box.pivot]);
-            }
-        });
-
-        const updateGizmoSize = () => {
-            const { camera, canvas } = scene;
-            if (camera.ortho) {
-                gizmo.size = 1125 / canvas.clientHeight;
-            } else {
-                gizmo.size = 1200 / Math.max(canvas.clientWidth, canvas.clientHeight);
-            }
+        this.parts = {
+            gizmo,
+            box,
+            selectToolbar
         };
-        updateGizmoSize();
-        events.on('camera.resize', updateGizmoSize);
-        events.on('camera.ortho', updateGizmoSize);
+    }
 
-        this.activate = () => {
-            this.active = true;
-            scene.add(box);
-            gizmo.attach([box.pivot]);
-            selectToolbar.hidden = false;
-        };
-
-        this.deactivate = () => {
-            selectToolbar.hidden = true;
-            gizmo.detach();
-            scene.remove(box);
-            this.active = false;
-        };
+    updateGizmoSize() {
+        const { camera, canvas } = this.scene;
+        if (camera.ortho) {
+            this.parts.gizmo.size = 1125 / canvas.clientHeight;
+        } else {
+            this.parts.gizmo.size = 1200 / Math.max(canvas.clientWidth, canvas.clientHeight);
+        }
     }
 }
 
